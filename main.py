@@ -1,3 +1,5 @@
+import time
+
 class Compression:
     def get_input_file(self, input_file):
         with open(input_file, 'rb') as BINARY_FILE:
@@ -11,7 +13,6 @@ class Compression:
         for byte in BINARY_CONTENT:
             if byte in seen:
                 patterns_found.append(byte)
-                print(f"Pattern: {byte}")
             else:
                 seen.add(byte)
         return patterns_found
@@ -24,10 +25,12 @@ class Compression:
         return PATREF_FILE
     
     def replace_input_patterns(self, BINARY_CONTENT, patterns_found):
-        replaced_content = BINARY_CONTENT
+        replaced_content = bytearray(BINARY_CONTENT)
         for index, pattern in enumerate(patterns_found):
-            replaced_content = replaced_content.replace(bytes([pattern]), f"({index})".encode('utf-8'))
-        return replaced_content
+            pattern_bytes = bytes([pattern])
+            replacement_bytes = f"({index})".encode('utf-8')
+            replaced_content = replaced_content.replace(pattern_bytes, replacement_bytes)
+        return bytes(replaced_content)
     
     def create_patport_file(self, input_file, replaced_content):
         patport_file = input_file + ".patport"
