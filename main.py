@@ -43,7 +43,10 @@ if __name__ == '__main__':
     input_file = "Test-Lapce.msi"
 
     binary_content = compress.get_input_file(input_file)
+    start_time = time.time()
     patterns_found = compress.find_patterns(binary_content)
+    end_time = time.time()
+    print(f"Time taken to find patterns: {end_time - start_time:.2f} seconds")
     patref_file = compress.create_patref_file(input_file, patterns_found)
     replaced_content = compress.replace_input_patterns(binary_content, patterns_found)
     patport_file = compress.create_patport_file(input_file, replaced_content)
