@@ -60,7 +60,6 @@ class Compression:
 
     def find_patterns(self, binary_content, min_pattern_length):
         """Find and return byte patterns that occur more than once."""
-        print(f"Finding patterns")
         pattern_count = defaultdict(int)
 
         for i in range(len(binary_content) - min_pattern_length + 1):
@@ -72,7 +71,6 @@ class Compression:
 
     def create_patref_file(self, input_file, patterns_found):
         """Create a pattern reference file containing the found patterns."""
-        print(f"Creating pattern reference file.")
         patref_file = input_file + ".patref"
         with open(patref_file, 'wb') as pattern_file:
             for index, pattern in enumerate(patterns_found):
