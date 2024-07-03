@@ -1,5 +1,47 @@
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
+
+class AhoCorasickAutomation:
+    def __init__(self):
+        self.transitions = defaultdict(dict)
+        self.failures = {}
+        self.outputs = defaultdict(list)
+
+    def add_pattern(self, pattern, output):
+        current_state = 0
+        for byte in pattern:
+            current_state = self.transitions[current_state].setdefault(byte, len(self.transitions))
+        self.outputs[current_state].append(output)
+
+    def build(self):
+        queue = deque()
+        for byte in range(256):
+            if byte in self.transitions[0]:
+                state = self.transitions[0][byte]
+                self.failures[state] = 0
+                queue.append(state)
+            else:
+                self.transitions[0][byte] = 0
+            
+        while queue:
+            state = queue.popleft()
+            for byte, next_state in self.transitions[state].items():
+                queue.append(next_state)
+                fail_state = self.failures[state]
+                while byte not in self.transitions[fail_state]:
+                    fail_state = self.failures[fail_state]
+                self.failures[next_state] = self.transitions[fail_state][byte]
+                self.outputs[next_state].extend(self.outputs[self.failures[next_state]])
+    
+    def search(self, text):
+        state = 0
+        for index, byte in enumerate(text):
+            while byte not in self.transitions[state]:
+                state = self.failures[state]
+            state = self.transitions[state][byte]
+            for pattern in self.outputs[state]:
+                yield index, pattern
+
 
 class Compression:
     def get_input_file(self, input_file):
@@ -10,7 +52,6 @@ class Compression:
     def find_patterns(self, binary_content, min_pattern_length=9):
         print(f"Finding patterns")
         pattern_count = defaultdict(int)
-        patterns_found = []
 
         for i in range(len(binary_content) - min_pattern_length + 1):
             pattern = binary_content[i:i + min_pattern_length]
@@ -24,27 +65,28 @@ class Compression:
         patref_file = input_file + ".patref"
         with open(patref_file, 'wb') as pattern_file:
             for index, pattern in enumerate(patterns_found):
-                pattern_file.write(f'({index})'.encode('utf-8') + b' ' + pattern + b'\n')
+                pattern_file.write(f"({index})".encode('utf-8') + b" " + pattern + b"\n")
         return patref_file
     
     def replace_input_patterns(self, binary_content, patterns_found):
+        automation = AhoCorasickAutomation()
         pattern_dict = {pattern: f"({index})".encode('utf-8') for index, pattern in enumerate(patterns_found)}
+
+        for pattern, ref in pattern_dict.items():
+            automation.add_pattern(pattern, ref)
+        automation.build()
+
         replaced_content = bytearray()
-        i = 0
+        last_match_end = 0
 
-        while i < len(binary_content):
-            replaced = False
-            for pattern, ref in pattern_dict.items():
-                pattern_length = len(pattern)
-                if binary_content[i:i + pattern_length] == pattern:
-                    replaced_content.extend(ref)
-                    i += pattern_length
-                    replaced = True
-                    break
-            if not replaced:
-                replaced_content.append(binary_content[i])
-                i += 1
-
+        for index, ref in automation.search(binary_content):
+            pattern_length = len(patterns_found[int(ref[1:-1])])
+            start = index - pattern_length + 1
+            replaced_content.extend(binary_content[last_match_end:start])
+            replaced_content.extend(ref)
+            last_match_end = index + 1
+        
+        replaced_content.extend(binary_content[last_match_end:])
         return bytes(replaced_content)
     
     def create_patport_file(self, input_file, replaced_content):
