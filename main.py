@@ -49,9 +49,7 @@ class AhoCorasickAutomation:
             for pattern in self.outputs[state]:
                 yield index, pattern
 
-
 class Compression:
-
     def get_input_file(self, input_file):
         """Read the binary content of the input file."""
         with open(input_file, 'rb') as binary_file:
@@ -66,6 +64,7 @@ class Compression:
             pattern = binary_content[i:i + min_pattern_length]
             pattern_count[pattern] += 1
 
+        # Filter patterns that occur more than once
         patterns_found = [pattern for pattern, count in pattern_count.items() if count > 1]
         return patterns_found
 
@@ -95,10 +94,10 @@ class Compression:
             replaced_content.extend(binary_content[last_match_end:start])
             replaced_content.extend(ref)
             last_match_end = index + 1
-        
+
         replaced_content.extend(binary_content[last_match_end:])
         return bytes(replaced_content)
-    
+
     def create_patport_file(self, input_file, replaced_content):
         """Create the output file with replaced content."""
         patport_file = input_file + ".patport"
