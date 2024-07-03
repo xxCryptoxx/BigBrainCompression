@@ -53,11 +53,13 @@ class AhoCorasickAutomation:
 class Compression:
 
     def get_input_file(self, input_file):
+        """Read the binary content of the input file."""
         with open(input_file, 'rb') as binary_file:
             binary_content = binary_file.read()
         return binary_content
 
     def find_patterns(self, binary_content, min_pattern_length):
+        """Find and return byte patterns that occur more than once."""
         print(f"Finding patterns")
         pattern_count = defaultdict(int)
 
@@ -69,6 +71,7 @@ class Compression:
         return patterns_found
 
     def create_patref_file(self, input_file, patterns_found):
+        """Create a pattern reference file containing the found patterns."""
         print(f"Creating pattern reference file.")
         patref_file = input_file + ".patref"
         with open(patref_file, 'wb') as pattern_file:
@@ -77,6 +80,7 @@ class Compression:
         return patref_file
     
     def replace_input_patterns(self, binary_content, patterns_found):
+        """Replace found patterns in the binary content with references."""
         automation = AhoCorasickAutomation()
         pattern_dict = {pattern: f"({index})".encode('utf-8') for index, pattern in enumerate(patterns_found)}
 
@@ -98,6 +102,7 @@ class Compression:
         return bytes(replaced_content)
     
     def create_patport_file(self, input_file, replaced_content):
+        """Create the output file with replaced content."""
         patport_file = input_file + ".patport"
         with open(patport_file, 'wb') as output_file:
             output_file.write(replaced_content)
