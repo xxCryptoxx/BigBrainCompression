@@ -3,14 +3,21 @@ from collections import defaultdict, deque
 
 class AhoCorasickAutomation:
     def __init__(self):
-        self.transitions = defaultdict(dict)
+        self.transitions = [{}]
         self.failures = {}
         self.outputs = defaultdict(list)
+        self.pattern_count = 1
 
     def add_pattern(self, pattern, output):
         current_state = 0
         for byte in pattern:
-            current_state = self.transitions[current_state].setdefault(byte, len(self.transitions))
+            if byte not in self.transitions[current_state]:
+                self.transitions.append({})
+                self.transitions[current_state][byte] = self.pattern_count
+                current_state = self.pattern_count
+                self.pattern_count += 1
+            else:
+                current_state = self.transitions[current_state][byte]
         self.outputs[current_state].append(output)
 
     def build(self):
@@ -22,7 +29,7 @@ class AhoCorasickAutomation:
                 queue.append(state)
             else:
                 self.transitions[0][byte] = 0
-            
+
         while queue:
             state = queue.popleft()
             for byte, next_state in self.transitions[state].items():
@@ -32,7 +39,7 @@ class AhoCorasickAutomation:
                     fail_state = self.failures[fail_state]
                 self.failures[next_state] = self.transitions[fail_state][byte]
                 self.outputs[next_state].extend(self.outputs[self.failures[next_state]])
-    
+
     def search(self, text):
         state = 0
         for index, byte in enumerate(text):
@@ -44,12 +51,13 @@ class AhoCorasickAutomation:
 
 
 class Compression:
+
     def get_input_file(self, input_file):
         with open(input_file, 'rb') as binary_file:
             binary_content = binary_file.read()
         return binary_content
 
-    def find_patterns(self, binary_content, min_pattern_length=9):
+    def find_patterns(self, binary_content, min_pattern_length):
         print(f"Finding patterns")
         pattern_count = defaultdict(int)
 
@@ -97,12 +105,12 @@ class Compression:
 
 if __name__ == '__main__':
     compress = Compression()
-    input_file = "Title.mp3"
-
+    input_file: str = input("File >>> ")
+    pattern_length: int = int(input("Pattern Length >>> "))
     binary_content = compress.get_input_file(input_file)
 
     start_time = time.time()
-    patterns_found = compress.find_patterns(binary_content)
+    patterns_found = compress.find_patterns(binary_content, min_pattern_length=pattern_length)
     end_time = time.time()
     print(f"Time taken to find patterns: {end_time - start_time:.2f} seconds")
 
@@ -119,7 +127,7 @@ if __name__ == '__main__':
     patport_start_time = time.time()
     patport_file = compress.create_patport_file(input_file, replaced_content)
     patport_end_time = time.time()
-    print(f"Time taken to replace patterns file: {patport_end_time - patport_start_time:.2f} seconds")
+    print(f"Time taken to create output file: {patport_end_time - patport_start_time:.2f} seconds")
 
     print(f"Pattern reference file created: {patref_file}")
     print(f"Output file created: {patport_file}")
