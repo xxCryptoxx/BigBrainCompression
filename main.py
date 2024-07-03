@@ -1,35 +1,50 @@
 import time
+from collections import defaultdict
 
 class Compression:
     def get_input_file(self, input_file):
-        with open(input_file, 'rb') as BINARY_FILE:
-            BINARY_CONTENT = BINARY_FILE.read()
-        return BINARY_CONTENT
+        with open(input_file, 'rb') as binary_file:
+            binary_content = binary_file.read()
+        return binary_content
 
-    def find_patterns(self, BINARY_CONTENT):
+    def find_patterns(self, binary_content, min_pattern_length=9):
         print(f"Finding patterns")
-        seen = set()
+        pattern_count = defaultdict(int)
         patterns_found = []
-        for byte in BINARY_CONTENT:
-            if byte in seen:
-                patterns_found.append(byte)
-            else:
-                seen.add(byte)
+
+        for i in range(len(binary_content) - min_pattern_length + 1):
+            pattern = binary_content[i:i + min_pattern_length]
+            pattern_count[pattern] += 1
+
+        patterns_found = [pattern for pattern, count in pattern_count.items() if count > 1]
         return patterns_found
 
     def create_patref_file(self, input_file, patterns_found):
         print(f"Creating pattern reference file.")
-        PATREF_FILE = input_file + ".patref"
-        with open(PATREF_FILE, 'w', encoding='utf-8') as pattern_file:
-            pattern_file.write(','.join(map(str, patterns_found)))
-        return PATREF_FILE
+        patref_file = input_file + ".patref"
+        with open(patref_file, 'wb') as pattern_file:
+            for index, pattern in enumerate(patterns_found):
+                pattern_file.write(f'({index})'.encode('utf-8') + b' ' + pattern + b'\n')
+        return patref_file
     
-    def replace_input_patterns(self, BINARY_CONTENT, patterns_found):
-        replaced_content = bytearray(BINARY_CONTENT)
-        for index, pattern in enumerate(patterns_found):
-            pattern_bytes = bytes([pattern])
-            replacement_bytes = f"({index})".encode('utf-8')
-            replaced_content = replaced_content.replace(pattern_bytes, replacement_bytes)
+    def replace_input_patterns(self, binary_content, patterns_found):
+        pattern_dict = {pattern: f"({index})".encode('utf-8') for index, pattern in enumerate(patterns_found)}
+        replaced_content = bytearray()
+        i = 0
+
+        while i < len(binary_content):
+            replaced = False
+            for pattern, ref in pattern_dict.items():
+                pattern_length = len(pattern)
+                if binary_content[i:i + pattern_length] == pattern:
+                    replaced_content.extend(ref)
+                    i += pattern_length
+                    replaced = True
+                    break
+            if not replaced:
+                replaced_content.append(binary_content[i])
+                i += 1
+
         return bytes(replaced_content)
     
     def create_patport_file(self, input_file, replaced_content):
@@ -40,7 +55,7 @@ class Compression:
 
 if __name__ == '__main__':
     compress = Compression()
-    input_file = "Test-Lapce.msi"
+    input_file = "Title.mp3"
 
     binary_content = compress.get_input_file(input_file)
 
